@@ -128,3 +128,19 @@ fn read_ndjson_with_trailing_newline() {
     .unwrap();
     assert!(expected.frame_equal(&df));
 }
+
+#[test]
+fn read_ndjson_with_struct_column() {
+    let data = r#"{"struct": {"int_list": [1, 2, 3], "float": 5.0, "str_list": ["a", "b", "c"]}, "int_opt": null, "float_list": [1.1, 2.2]}"#;
+    let file = Cursor::new(data);
+    // let df = JsonReader::new(file)
+    //     .with_json_format(JsonFormat::JsonLines)
+    //     .finish()
+    //     .expect("Failed to read json");
+
+    let df = JsonLineReader::new(file)
+        .finish()
+        .expect("Failed to read json");
+
+    dbg!(&df);
+}

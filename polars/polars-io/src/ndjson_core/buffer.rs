@@ -21,6 +21,10 @@ pub(crate) fn init_buffers(
     schema: &Schema,
     capacity: usize,
 ) -> PolarsResult<PlIndexMap<BufferKey, Buffer>> {
+    println!(
+        "init_buffers: schema: {:?}, capacity: {:?}\n\n",
+        schema, capacity
+    );
     schema
         .iter()
         .map(|(name, dtype)| {
@@ -51,6 +55,7 @@ pub(crate) fn init_buffers(
 }
 
 #[allow(clippy::large_enum_variant)]
+#[derive(Debug)]
 pub(crate) enum Buffer<'a> {
     Boolean(BooleanChunkedBuilder),
     Int32(PrimitiveChunkedBuilder<Int32Type>),

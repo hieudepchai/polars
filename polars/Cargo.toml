@@ -25,6 +25,9 @@ default = [
   "temporal",
   "fmt",
   "dtype-slim",
+  "polars-io",
+  "json",
+  "dtype-full"
 ]
 ndarray = ["polars-core/ndarray"]
 # serde support for dataframes and series

@@ -63,6 +63,7 @@ pub trait PolarsDataType: Send + Sync {
 
 macro_rules! impl_polars_datatype {
     ($ca:ident, $variant:ident, $physical:ty) => {
+        #[derive(Debug)]
         pub struct $ca {}
 
         impl PolarsDataType for $ca {

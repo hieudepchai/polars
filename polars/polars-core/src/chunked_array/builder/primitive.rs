@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Debug)]
 pub struct PrimitiveChunkedBuilder<T>
 where
     T: PolarsNumericType,

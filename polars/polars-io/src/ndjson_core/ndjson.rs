@@ -159,12 +159,14 @@ impl<'a> CoreJsonReader<'a> {
                 let mut cursor = Cursor::new(bytes);
 
                 let data_type = arrow_ndjson::read::infer(&mut cursor, infer_schema_len).unwrap();
+                dbg!(&data_type);
                 let schema: polars_core::prelude::Schema =
                     StructArray::get_fields(&data_type).iter().into();
 
                 Cow::Owned(schema)
             }
         };
+        dbg!(&schema);
         Ok(CoreJsonReader {
             reader_bytes: Some(reader_bytes),
             schema,
@@ -210,22 +212,32 @@ impl<'a> CoreJsonReader<'a> {
         };
 
         let file_chunks = get_file_chunks_json(bytes, n_threads);
-        let dfs = POOL.install(|| {
-            file_chunks
-                .into_par_iter()
-                .map(|(start_pos, stop_at_nbytes)| {
-                    let mut buffers = init_buffers(&self.schema, capacity)?;
-                    let _ = parse_lines(&bytes[start_pos..stop_at_nbytes], &mut buffers);
+        let dfs = file_chunks
+            .into_iter()
+            .map(|(start_pos, stop_at_nbytes)| {
+                let mut buffers = init_buffers(&self.schema, capacity)?;
+                dbg!(&buffers);
 
-                    DataFrame::new(
-                        buffers
-                            .into_values()
-                            .map(|buf| buf.into_series())
-                            .collect::<PolarsResult<_>>()?,
-                    )
-                })
-                .collect::<PolarsResult<Vec<_>>>()
-        })?;
+                let _ = parse_lines(&bytes[start_pos..stop_at_nbytes], &mut buffers);
+
+                println!("after parse_lines");
+
+                dbg!(&buffers);
+                DataFrame::new(
+                    buffers
+                        .into_values()
+                        .map(|buf| {
+                            dbg!(&buf);
+                            let s = buf.into_series();
+                            dbg!(&s);
+                            s
+                        })
+                        .collect::<PolarsResult<_>>()?,
+                )
+            })
+            .collect::<PolarsResult<Vec<_>>>()?;
+
+        dbg!(&dfs);
         accumulate_dataframes_vertical(dfs)
     }
     pub fn as_df(&mut self) -> PolarsResult<DataFrame> {
@@ -255,6 +267,8 @@ fn parse_impl(
     line.clear();
     line.extend_from_slice(bytes);
 
+    dbg!(&line);
+
     match line.len() {
         0 => Ok(0),
         1 => {
@@ -280,6 +294,8 @@ fn parse_impl(
                 simd_json::to_borrowed_value(line).map_err(|e| {
                     PolarsError::ComputeError(format!("Error parsing line: {}", e).into())
                 })?;
+
+            dbg!(&value);
 
             match value {
                 simd_json::BorrowedValue::Object(value) => {
@@ -309,6 +325,7 @@ fn parse_lines(bytes: &[u8], buffers: &mut PlIndexMap<BufferKey, Buffer>) -> Pol
     let mut iter =
         serde_json::Deserializer::from_slice(bytes).into_iter::<Box<serde_json::value::RawValue>>();
     while let Some(Ok(value)) = iter.next() {
+        dbg!(&value);
         let bytes = value.get().as_bytes();
         offset += bytes.len();
         parse_impl(bytes, buffers, &mut buf)?;
